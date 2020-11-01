@@ -3,13 +3,13 @@ EXE = apov-convert.exe
 OBJS = main.o
 OBJS := $(addprefix $(BIN), $(OBJS))
 
-CXFLAGS = -Wpadded -Wpacked -Wall
+CXFLAGS = -g0 -O3 -Wpadded -Wpacked -Wall
 LDFLAGS = -lstdc++
 
 all: $(BIN)$(EXE)
 
 $(BIN)$(EXE): $(OBJS)
-	gcc -o $@ $^ $(LDFLAGS)
+	gcc -o $@ $^ $(LDFLAGS) $(CXFLAGS)
 
 $(BIN)%.o: %.cpp
 	gcc -o $@ -c $< $(CXFLAGS)
