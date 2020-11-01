@@ -1,7 +1,8 @@
 # apov-datasets-converter
 Experimental converter of sliced 3-Dimensional data sets, to the voxels.bin file
 entry used by the APoV generator. The current version, is only supporting
-grayscale slices.
+grayscale slices. Tests have only been made with datasets, part of the "University
+of North Carolina Volume Rendering Test Data Set".
 
 Extract the slices in a folder (slices for example) at the root of the repository,
 then execute the converter as one of the lines below:
