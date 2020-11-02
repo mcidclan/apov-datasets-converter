@@ -29,6 +29,7 @@ static u16 BIT_XOR_MASK = 0x0000;
 static u32 SLICE_VOXEL_COUNT;
 static u32 DATA_VOXEL_COUNT;
 static bool TRANSPARENT_VOXELS = false;
+static float INCREASE_LUMINOSITY = 1.0f;
 
 int main(int argc, char** argv) {
     
@@ -47,6 +48,8 @@ int main(int argc, char** argv) {
            DEPTH_SIZE = std::stoi(name.substr(11));
         } else if(name.find("rescale-luminosity-from:") == 0) {
             RESCALE_LUMINOSITY_FROM = stoi(name.substr(24));
+        } else if(name.find("increase-luminosity:") == 0) {
+            INCREASE_LUMINOSITY = std::stof(name.substr(20));
         } else if(name.find("bit-and-mask:") == 0) {
             //0x000F
             BIT_AND_MASK = stoll(name.substr(13), 0 , 16);
@@ -117,6 +120,11 @@ int main(int argc, char** argv) {
                         } 
                         
                         if(l > THRESHOLD) {
+                            if(INCREASE_LUMINOSITY > 1.0f) {
+                                const u8 _l = (u8)(l * INCREASE_LUMINOSITY);
+                                l = _l > 255 ?  255 : _l;
+                            }
+                            
                             u32 color = 0x000000FF | l << 8 | l << 16 | l << 24;
                             if(TRANSPARENT_VOXELS) {
                                 color &= 0xFFFFFF00 | l;
