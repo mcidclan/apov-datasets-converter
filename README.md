@@ -6,7 +6,11 @@ of North Carolina Volume Rendering Test Data Set".
 
 Extract the slices in a folder (slices for example) at the root of the repository,
 then execute the converter as one of the lines below:
-Keep only hard voxels:
+Keeps only hard voxels:
 ./bin/apov-convert slices slice-count:109 depth-size:2 bit-and-mask:0x0008
-Keep background, remove imperfections:
+Keeps background, remove imperfections:
 ./bin/apov-convert slices slice-count:109 depth-size:2 bit-and-mask:0x000E
+
+You can generate the file with transparent voxels as shown in the following line:
+./bin/apov-convert slices slice-count:109 depth-size:2 bit-and-mask:0x000E \ 
+transparent-voxels rescale-luminosity-from:64

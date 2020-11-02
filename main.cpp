@@ -22,11 +22,13 @@ static u16 SLICE_HEIGHT = 256;
 static u16 SLICE_COUNT = 1;
 static u8 THRESHOLD = 0;
 static u8 DEPTH_SIZE = 1;
+static u8 RESCALE_LUMINOSITY_FROM = 0;
 static u16 BIT_AND_MASK = 0x00FF;
 static u16 BIT_XOR_MASK = 0x0000;
 //static bool THRESHOLD_AUTO = false;
 static u32 SLICE_VOXEL_COUNT;
 static u32 DATA_VOXEL_COUNT;
+static bool TRANSPARENT_VOXELS = false;
 
 int main(int argc, char** argv) {
     
@@ -43,11 +45,15 @@ int main(int argc, char** argv) {
            THRESHOLD = std::stoi(name.substr(10));
         } else if(name.find("depth-size:") == 0) {
            DEPTH_SIZE = std::stoi(name.substr(11));
+        } else if(name.find("rescale-luminosity-from:") == 0) {
+            RESCALE_LUMINOSITY_FROM = stoi(name.substr(24));
         } else if(name.find("bit-and-mask:") == 0) {
             //0x000F
             BIT_AND_MASK = stoll(name.substr(13), 0 , 16);
         } else if(name.find("bit-xor-mask:") == 0) {
             BIT_XOR_MASK = stoll(name.substr(13), 0 , 16);
+        } else if(name.find("transparent-voxels") == 0) {
+            TRANSPARENT_VOXELS = true;
         }
         i++;
     }
@@ -98,11 +104,23 @@ int main(int argc, char** argv) {
                     u16 j = 0;
                     while(j < SLICE_HEIGHT) {
                         const u16 value = data[i + j * SLICE_WIDTH + (k / DEPTH_SIZE)  * SLICE_VOXEL_COUNT];
-                        const u16 l = ((value & BIT_AND_MASK) ^ BIT_XOR_MASK) << 4;
+                        u16 l = ((value & BIT_AND_MASK) ^ BIT_XOR_MASK) << 4;
 
+                        if(RESCALE_LUMINOSITY_FROM > 0) {
+                            const float f = (255.0f + RESCALE_LUMINOSITY_FROM) / 255.0f;
+                            if(l < RESCALE_LUMINOSITY_FROM) {
+                                l = 0;
+                            } else {
+                                l -= RESCALE_LUMINOSITY_FROM;
+                            }
+                            l = (u8)(l * f);
+                        } 
+                        
                         if(l > THRESHOLD) {
-                            const u32 color = 0x000000FF | l << 8 | l << 16 | l << 24;
-                            
+                            u32 color = 0x000000FF | l << 8 | l << 16 | l << 24;
+                            if(TRANSPARENT_VOXELS) {
+                                color &= 0xFFFFFF00 | l;
+                            }
                             const Voxel voxel = {
                                 color,
                                 {
