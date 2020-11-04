@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <string>
+#include <stdexcept>
 #include <dirent.h>
 
 #define i16 short int
@@ -30,6 +31,7 @@ static u32 SLICE_VOXEL_COUNT;
 static u32 DATA_VOXEL_COUNT;
 static bool TRANSPARENT_VOXELS = false;
 static float INCREASE_LUMINOSITY = 1.0f;
+static bool READ_ID_BEFORE_DOT = false;
 
 int main(int argc, char** argv) {
     
@@ -57,6 +59,8 @@ int main(int argc, char** argv) {
             BIT_XOR_MASK = stoll(name.substr(13), 0 , 16);
         } else if(name.find("transparent-voxels") == 0) {
             TRANSPARENT_VOXELS = true;
+        } else if(name.find("read-id-before-dot") == 0) {
+            READ_ID_BEFORE_DOT = true;
         }
         i++;
     }
@@ -71,28 +75,37 @@ int main(int argc, char** argv) {
         DATA_VOXEL_COUNT = SLICE_VOXEL_COUNT * SLICE_COUNT;
         u16* const data = new u16[DATA_VOXEL_COUNT];
         
-        u16 ns = 0;
-        while((ent = readdir(dir)) != NULL) {
-            std::string name = ent->d_name;
-            if(name != ".." && name != ".") {
-                std::size_t pos = name.find_last_of(".");
-                if(pos != std::string::npos) {
-                    std::string filename = argv[1];
-                    filename += "/" + name;
-                    FILE* const f = fopen(filename.c_str(), "rb");
-                    if(f != NULL) {
-                        const u32 sid = std::stoi(name.substr(pos + 1)) - 1;
-                        const u32 offset = sid * SLICE_VOXEL_COUNT;
-                        printf("Slice id: %u. File (%s) loaded.\n", sid, name.c_str());
-                        fread(&(data[offset]), sizeof(u16), SLICE_VOXEL_COUNT, f);
-                        fclose(f);
-                        ns++;
+        try {
+            u16 ns = 0;
+            while((ent = readdir(dir)) != NULL) {
+                std::string name = ent->d_name;
+                if(name != ".." && name != ".") {
+                    std::size_t pos = name.find_last_of(".");
+                    if(pos != std::string::npos) {
+                        std::string filename = argv[1];
+                        filename += "/" + name;
+                        FILE* const f = fopen(filename.c_str(), "rb");
+                        if(f != NULL) {
+                            std::string sid;
+                            if(READ_ID_BEFORE_DOT) {
+                                sid = name.substr(0, pos);
+                            } else sid = name.substr(pos + 1);
+                            const u32 id = std::stoi(sid) - 1;
+                            const u32 offset = id * SLICE_VOXEL_COUNT;
+                            printf("Slice id: %u. File (%s) loaded.\n", id, name.c_str());
+                            fread(&(data[offset]), sizeof(u16), SLICE_VOXEL_COUNT, f);
+                            fclose(f);
+                            ns++;
+                        }
                     }
                 }
-            }
+            }                    
+            printf("%u files read\n", ns);
+            closedir(dir);
+        } catch(const std::invalid_argument& e) {
+            printf("Retry by %s read-id-before-dot option.", READ_ID_BEFORE_DOT ? "removing" : "adding");
+            return 0;
         }
-        printf("%u files read\n", ns);
-        closedir(dir);
         
         const u16 SLICE_HALF_WIDTH = SLICE_WIDTH / 2;
         const u16 SLICE_HALF_HEIGHT = SLICE_HEIGHT / 2;
@@ -143,7 +156,7 @@ int main(int argc, char** argv) {
                         j++;
                     }
                     i++;
-                }                
+                }
                 printf("\rWrite %u / %u", k + 1, SLICE_COUNT * DEPTH_SIZE);
                 k++;
             }
